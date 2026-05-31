@@ -1,0 +1,46 @@
+name: Build & deploy leaderboard
+
+# Publishes the REAL leaderboard to GitHub Pages.
+#
+# Route A (local build + push of rendered HTML): the real index.html is built on the
+# Dev machine (student_submissions/run_and_compare.py -> reports/index.html) and
+# git-pushed to this repo by the daily 18:00 "HydroDispatch_Publish" task (forceable
+# from 16:30). This workflow therefore does NOT rebuild anything — it just deploys the
+# committed index.html, so it can never overwrite the real board.
+on:
+  push:
+    branches: [main]            # the daily local push of index.html publishes the page
+  schedule:
+    - cron: "0 16 * * *"        # 16:00 UTC = 18:00 Europe/Madrid (CEST) — daily redeploy safety net
+  workflow_dispatch:            # manual force from the Actions tab (use between 16:30 and 18:00 Madrid)
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assemble site (publish the committed real index.html)
+        run: |
+          mkdir -p _site
+          cp index.html _site/index.html
+          cp .nojekyll _site/ 2>/dev/null || true
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

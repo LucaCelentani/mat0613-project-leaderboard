@@ -40,8 +40,7 @@ project brief has the full model.
 | `.github/workflows/deploy.yml` | publishes `index.html` to GitHub Pages |
 | `.nojekyll` | tells Pages to skip Jekyll processing |
 
-## Deployment
+## Visualization
 
-Push to `main` and the GitHub Action publishes `index.html`. Set
-**Settings -> Pages -> Source: GitHub Actions**. The page also rebuilds on a daily schedule
-and can be run manually from the Actions tab.
+Results for day D+1 are updated during day D after 18:00 (might take more time) and can be visualized in:
+ - 'https://github.com/LucaCelentani/mat0613-project-leaderboard'

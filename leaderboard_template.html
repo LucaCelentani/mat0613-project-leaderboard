@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hydro Dispatch Optimization - Leaderboard</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Albert School palette */
+    --san-juan:#385275; --san-juan-d:#2a3f5c; --san-juan-l:#6a83a3;
+    --rose:#e7c6b7; --rose-d:#bd8c75; --thunder:#2b2129;
+    /* neutrals */
+    --bg:#fbfaf8; --panel:#ffffff; --panel2:#f6f3f0;
+    --ink:#2b2129; --muted:#736c73; --dim:#a59ea4;
+    --line:#ece6e1; --line2:#ddd5ce;
+    --ok:#385275; --danger:#b23a48; --danger-bg:#fbf1f2;
+    --gold:#b8902f; --silver:#8c99a3; --bronze:#a9764f;
+    --mono:"IBM Plex Mono",ui-monospace,monospace;
+    --sans:"Albert Sans",system-ui,sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;font-family:var(--sans);color:var(--ink);background:var(--bg);
+    -webkit-font-smoothing:antialiased;line-height:1.45;
+  }
+  .wrap{max-width:1160px;margin:0 auto;padding:34px 26px 80px;}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums;}
+  a{color:var(--san-juan);}
+
+  /* header */
+  header.top{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;
+    flex-wrap:wrap;border-bottom:1px solid var(--line2);padding-bottom:22px;margin-bottom:26px;}
+  .brand{display:flex;align-items:center;gap:14px;}
+  .glyph{width:42px;height:42px;border-radius:9px;flex:none;background:var(--san-juan);
+    display:grid;place-items:center;color:#fff;font-size:21px;}
+  .eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--san-juan);
+    font-weight:600;margin-bottom:3px;}
+  h1{font-weight:700;letter-spacing:-.4px;font-size:clamp(23px,3vw,31px);line-height:1.04;margin:0;}
+  .subtitle{color:var(--muted);font-size:13px;margin-top:4px;}
+  .updated{text-align:right;font-size:12px;color:var(--dim);}
+  .updated b{color:var(--muted);font-weight:600;}
+  .updated .pill{display:inline-flex;align-items:center;gap:7px;margin-top:8px;
+    font-family:var(--mono);font-size:11px;color:var(--san-juan);background:var(--panel2);
+    border:1px solid var(--line2);padding:5px 11px;border-radius:999px;}
+  .live-dot{width:7px;height:7px;border-radius:50%;background:var(--san-juan);
+    animation:pulse 2.4s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  /* stat strip */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;
+    background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:14px;}
+  .stat{background:var(--panel);padding:13px 16px;}
+  .stat .k{font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);}
+  .stat .v{font-family:var(--mono);font-size:18px;font-weight:600;margin-top:5px;color:var(--ink);}
+  .stat .v small{font-size:11px;color:var(--muted);font-weight:400;}
+  .stat .v.accent{color:var(--san-juan);}
+
+  /* section heads */
+  .sec-head{display:flex;align-items:baseline;gap:12px;margin:40px 0 15px;}
+  .sec-head .num{font-family:var(--mono);color:var(--san-juan);font-size:12px;font-weight:600;}
+  .sec-head h2{font-weight:700;letter-spacing:-.2px;font-size:19px;margin:0;}
+  .sec-head .hint{color:var(--dim);font-size:12px;margin-left:auto;text-align:right;}
+
+  /* podium */
+  .podium{display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:13px;align-items:end;}
+  .pcard{background:var(--panel);border:1px solid var(--line2);border-radius:13px;
+    padding:16px 16px 15px;position:relative;overflow:hidden;
+    opacity:0;transform:translateY(12px);animation:rise .5s forwards;}
+  .pcard::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;}
+  .pcard.p1{animation-delay:.16s;border-color:var(--san-juan-l);}
+  .pcard.p2{animation-delay:.05s;}.pcard.p3{animation-delay:.27s;}
+  .pcard.p1::before{background:var(--gold);}
+  .pcard.p2::before{background:var(--silver);}
+  .pcard.p3::before{background:var(--bronze);}
+  @keyframes rise{to{opacity:1;transform:translateY(0)}}
+  .medal{font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:600;}
+  .p1 .medal{color:var(--gold);}.p2 .medal{color:var(--silver);}.p3 .medal{color:var(--bronze);}
+  .pcard .pname{font-weight:700;font-size:21px;margin:7px 0 1px;line-height:1.05;letter-spacing:-.3px;}
+  .pcard .pmembers{color:var(--dim);font-size:11.5px;min-height:15px;}
+  .pcard .pmoney{font-family:var(--mono);font-weight:600;font-size:24px;margin-top:12px;color:var(--san-juan);}
+  .p1 .pmoney{font-size:28px;}
+  .pcard .ppct{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:2px;}
+
+  /* tables */
+  .panel{background:var(--panel);border:1px solid var(--line2);border-radius:13px;overflow:hidden;margin-top:14px;}
+  .scroll{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:14px;min-width:760px;}
+  thead th{font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:10.5px;color:var(--muted);
+    text-align:left;padding:13px 15px;border-bottom:1px solid var(--line2);background:var(--panel2);white-space:nowrap;}
+  thead th .u{display:block;font-weight:400;color:var(--dim);letter-spacing:.3px;font-size:9.5px;margin-top:2px;text-transform:none;}
+  th.r,td.r{text-align:right;}
+  tbody td{padding:13px 15px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr.team-row:hover{background:#fcfbfa;}
+  tbody tr.dq{background:var(--danger-bg);}
+  tbody tr.ref td{background:#f7f9fb;}
+
+  .rk{font-family:var(--mono);font-weight:600;font-size:16px;width:26px;color:var(--dim);}
+  .rk.g{color:var(--gold);}.rk.s{color:var(--silver);}.rk.b{color:var(--bronze);}
+  .tname{font-weight:700;font-size:15.5px;line-height:1.1;letter-spacing:-.2px;}
+  .tname .reftag{font-size:9px;letter-spacing:.5px;color:var(--san-juan);border:1px solid var(--san-juan-l);
+    border-radius:4px;padding:1px 5px;margin-left:7px;vertical-align:middle;text-transform:uppercase;font-weight:600;}
+  .tmembers{color:var(--dim);font-size:11.5px;margin-top:2px;}
+  .tstrat{color:var(--muted);font-size:12px;max-width:320px;line-height:1.35;}
+  .money{font-family:var(--mono);font-weight:600;font-size:15px;color:var(--ink);white-space:nowrap;}
+  .num{font-family:var(--mono);font-size:13px;color:var(--muted);white-space:nowrap;}
+  .num.over{color:var(--danger);font-weight:600;}
+
+  .pctcell{min-width:140px;}
+  .bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:5px;}
+  .bar>span{display:block;height:100%;border-radius:3px;background:var(--san-juan);width:0;
+    transition:width .9s cubic-bezier(.2,.8,.2,1);}
+  .pctval{font-family:var(--mono);font-size:12.5px;color:var(--muted);}
+
+  .badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;
+    padding:3px 9px;border-radius:999px;white-space:nowrap;}
+  .badge.ok{color:var(--san-juan);background:#eef2f6;border:1px solid #d6e0ea;}
+  .badge.bad{color:var(--danger);background:#f7e3e5;border:1px solid #ecc7cb;}
+  .badge.neutral{color:var(--muted);background:var(--panel2);border:1px solid var(--line2);}
+  .badge .dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+  .viol{color:var(--danger);font-size:11px;margin-top:4px;font-family:var(--mono);max-width:200px;line-height:1.3;}
+
+  /* chart */
+  .chart-wrap{padding:10px 8px 4px;}
+  #daychart{width:100%;height:380px;}
+
+  /* accuracy */
+  .acc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;}
+  .acc-card{background:var(--panel);border:1px solid var(--line2);border-radius:13px;padding:16px 17px 18px;}
+  .acc-card h3{font-weight:700;font-size:14.5px;margin:0 0 2px;letter-spacing:-.2px;}
+  .acc-card .unit{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-bottom:13px;letter-spacing:.3px;}
+  .acc-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line);}
+  .acc-row:first-of-type{border-top:none;}
+  .acc-rank{font-family:var(--mono);font-size:12px;color:var(--dim);width:16px;text-align:right;}
+  .acc-row.best .acc-rank{color:var(--rose-d);font-weight:600;}
+  .acc-name{font-size:13px;flex:none;width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .acc-row.best .acc-name{color:var(--rose-d);font-weight:600;}
+  .acc-bar{flex:1;height:7px;border-radius:3px;background:var(--line);overflow:hidden;}
+  .acc-bar>span{display:block;height:100%;border-radius:3px;width:0;background:var(--rose-d);
+    transition:width .9s cubic-bezier(.2,.8,.2,1);}
+  .acc-row.best .acc-bar>span{background:var(--san-juan);}
+  .acc-val{font-family:var(--mono);font-size:12.5px;color:var(--muted);width:58px;text-align:right;}
+
+  .foot{margin-top:42px;border-top:1px solid var(--line2);padding-top:18px;color:var(--muted);font-size:12px;line-height:1.65;}
+  .foot code{font-family:var(--mono);color:var(--ink);background:var(--panel2);padding:1px 5px;border-radius:4px;font-size:11px;}
+  .foot b{color:var(--ink);}
+
+  @media (max-width:720px){
+    .podium{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <div class="glyph">⬡</div>
+      <div>
+        <div class="eyebrow">Albert School · Optimization Project · MAT0613</div>
+        <h1>Hydro Dispatch Optimization - Leaderboard</h1>
+        <div class="subtitle" id="subtitle"></div>
+      </div>
+    </div>
+    <div class="updated">
+      <div id="window-label"></div>
+      <div class="pill"><span class="live-dot"></span><span id="updated-at"></span></div>
+    </div>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="sec-head">
+    <span class="num">01</span><h2>Money - Profit Ranking</h2>
+    <span class="hint">Realised euros over the backtest window · feasible teams ranked</span>
+  </div>
+  <div class="podium" id="podium"></div>
+
+  <div class="panel"><div class="scroll">
+    <table id="money-table">
+      <thead><tr>
+        <th>Rank</th>
+        <th>Team</th>
+        <th>Approach</th>
+        <th class="r">Profit<span class="u">€</span></th>
+        <th class="r">vs. Hindsight<span class="u">% of max</span></th>
+        <th class="r">Water Released<span class="u">MWh</span></th>
+        <th class="r">Constraint Met<span class="u">feasible?</span></th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div></div>
+
+  <div class="sec-head">
+    <span class="num">02</span><h2>Daily Progression</h2>
+    <span class="hint">Cumulative profit per team · € over the window</span>
+  </div>
+  <div class="panel chart-wrap"><div id="daychart"></div></div>
+
+  <div class="sec-head">
+    <span class="num">03</span><h2>Forecast Accuracy - MAE</h2>
+    <span class="hint">Mean absolute error vs. realised values · lower is better</span>
+  </div>
+  <div class="acc-grid" id="acc-grid"></div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+const PAYLOAD = __PAYLOAD__;
+const M = PAYLOAD.meta, P = M.plant, teams = PAYLOAD.teams, targets = PAYLOAD.targets;
+
+const eur = n => "€" + Math.round(n).toLocaleString("en-US");
+const eurShort = n => {
+  const a = Math.abs(n);
+  if (a >= 1e6) return "€" + (n/1e6).toFixed(2) + "M";
+  if (a >= 1e3) return "€" + (n/1e3).toFixed(0) + "k";
+  return "€" + Math.round(n);
+};
+const mwh = n => Math.round(n).toLocaleString("en-US");
+const SHORT = {
+  "Day-Ahead Energy Price (EUR/MWh)": "Day-Ahead Price",
+  "Availability Price to Reduce Production (EUR/MW/qh)": "Availability ↓ (to Stop)",
+  "Availability Price to Increase Production (EUR/MW/qh)": "Availability ↑ (to Produce)",
+};
+const UNIT = {
+  "Day-Ahead Energy Price (EUR/MWh)": "EUR / MWh",
+  "Availability Price to Reduce Production (EUR/MW/qh)": "EUR / MW / qh",
+  "Availability Price to Increase Production (EUR/MW/qh)": "EUR / MW / qh",
+};
+const COLORS = ["#385275","#bd8c75","#6a83a3","#8c99a3","#a9764f","#5a7a6a","#9a7b9c","#4d6b8a"];
+
+document.getElementById("subtitle").textContent = M.subtitle;
+document.getElementById("window-label").innerHTML = "<b>Backtest:</b> " + M.window_label;
+document.getElementById("updated-at").textContent = "Updated " + M.last_updated;
+
+/* stat strip */
+const downDay = M.unavailable_days.length
+  ? M.unavailable_days.map(i => M.days[i]).join(", ") : "none drawn";
+document.getElementById("stats").innerHTML = `
+  <div class="stat"><div class="k">Plant capacity</div><div class="v">${P.capacity_mw.toLocaleString()} <small>MW</small></div></div>
+  <div class="stat"><div class="k">Dispatchable water</div><div class="v">${mwh(P.total_budget)} <small>MWh</small></div></div>
+  <div class="stat"><div class="k">Reservoir floor</div><div class="v">${mwh(P.w_min_end)} <small>MWh</small></div></div>
+  <div class="stat"><div class="k">Hindsight max</div><div class="v accent">${eurShort(M.hindsight_profit)}</div></div>
+  <div class="stat"><div class="k">Teams scored</div><div class="v">${teams.length}</div></div>
+  <div class="stat"><div class="k">Unavailable day (5%)</div><div class="v" style="font-size:13px;">${downDay}</div></div>
+`;
+
+/* ordering */
+const compliant = teams.filter(t => t.valid).sort((a,b)=>a.rank_profit-b.rank_profit);
+const infeasible = teams.filter(t => !t.valid).sort((a,b)=>b.profit_total-a.profit_total);
+const ordered = [...compliant, ...infeasible];
+const maxPct = Math.max(...compliant.map(t=>t.pct_of_hindsight), 1);
+
+/* podium */
+const podiumOrder = [compliant[1], compliant[0], compliant[2]];
+const pclass = ["p2","p1","p3"], plabel = ["2nd","1st","3rd"];
+document.getElementById("podium").innerHTML = podiumOrder.map((t,i)=>{
+  if(!t) return `<div class="pcard ${pclass[i]}"></div>`;
+  return `<div class="pcard ${pclass[i]}">
+    <div class="medal">${plabel[i]} place</div>
+    <div class="pname">${t.name}</div>
+    <div class="pmembers">${t.members||"&nbsp;"}</div>
+    <div class="pmoney">${eur(t.profit_total)}</div>
+    <div class="ppct">${t.pct_of_hindsight.toFixed(1)}% of hindsight max</div>
+  </div>`;
+}).join("");
+
+/* money table */
+const rkClass = r => r===1?"g":r===2?"s":r===3?"b":"";
+document.querySelector("#money-table tbody").innerHTML = ordered.map(t=>{
+  const dq = !t.valid;
+  const cons = dq
+    ? `<span class="badge bad"><span class="dot"></span>no</span>
+       <div class="viol">${t.violations.join("; ")}</div>`
+    : `<span class="badge ok"><span class="dot"></span>yes</span>`;
+  const pctw = dq ? 0 : Math.min(100, 100*t.pct_of_hindsight/maxPct);
+  const rowcls = "team-row" + (dq?" dq":"") + (t.id==="ref"?" ref":"");
+  const reftag = t.id==="ref" ? `<span class="reftag">reference</span>` : "";
+  const overBudget = t.total_dispatch > P.total_budget + 1;
+  return `<tr class="${rowcls}">
+    <td class="rk ${rkClass(t.rank_profit)}">${dq?"-":t.rank_profit}</td>
+    <td>
+      <div class="tname">${t.name}${reftag}</div>
+      <div class="tmembers">${t.members||""}</div>
+    </td>
+    <td><div class="tstrat">${t.strategy}</div></td>
+    <td class="r"><span class="money">${eur(t.profit_total)}</span></td>
+    <td class="r pctcell">
+      <span class="pctval">${dq?"-":t.pct_of_hindsight.toFixed(1)+"%"}</span>
+      <div class="bar"><span data-w="${pctw}"></span></div>
+    </td>
+    <td class="r"><span class="num ${overBudget?'over':''}">${mwh(t.total_dispatch)}</span></td>
+    <td class="r">${cons}</td>
+  </tr>`;
+}).join("");
+
+requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  document.querySelectorAll(".bar>span").forEach(s=>s.style.width=s.dataset.w+"%");
+}));
+
+/* daily progression chart (cumulative, starting from 0) */
+function cumsum(a){let s=0;return a.map(v=>s+=v);}
+const xdays = M.days.map(d=>d);
+const xcat = ["Start", ...xdays];                 // anchor the cumulative line at 0
+const traces = [];
+if (M.hindsight_by_day && M.hindsight_by_day.length){
+  traces.push({x:xcat, y:[0, ...cumsum(M.hindsight_by_day)], name:"Hindsight max", mode:"lines",
+    line:{color:"#a59ea4",width:1.6,dash:"dash"}, hovertemplate:"€%{y:,.0f}<extra>Hindsight</extra>"});
+}
+ordered.filter(t=>t.valid).forEach((t,i)=>{
+  traces.push({x:xcat, y:[0, ...cumsum(t.profit_by_day)], name:t.name, mode:"lines",
+    line:{color:COLORS[i%COLORS.length], width:t.id==="ref"?3:1.8},
+    hovertemplate:"€%{y:,.0f}<extra>"+t.name+"</extra>"});
+});
+const shapes = M.unavailable_days.map(i=>({type:"line", xref:"x", yref:"paper",
+  x0:xdays[i], x1:xdays[i], y0:0, y1:1, line:{color:"#b23a48",width:1.4,dash:"dot"}}));
+const annos = M.unavailable_days.map(i=>({x:xdays[i], y:1, yref:"paper", text:"plant unavailable (penalty)",
+  showarrow:false, font:{color:"#b23a48",size:10,family:"IBM Plex Mono"}, yanchor:"bottom", xanchor:"center"}));
+Plotly.newPlot("daychart", traces, {
+  paper_bgcolor:"rgba(0,0,0,0)", plot_bgcolor:"rgba(0,0,0,0)",
+  font:{color:"#736c73",family:"Albert Sans",size:12},
+  margin:{l:66,r:18,t:24,b:40}, hovermode:"x unified",
+  legend:{orientation:"h",y:-0.18,font:{size:11}},
+  xaxis:{gridcolor:"#ece6e1",tickfont:{family:"IBM Plex Mono",size:10}},
+  yaxis:{gridcolor:"#ece6e1",title:{text:"Cumulative profit (€)",font:{size:11}},
+    tickfont:{family:"IBM Plex Mono",size:10},zeroline:false},
+  shapes, annotations:annos,
+}, {responsive:true, displaylogo:false});
+
+/* accuracy cards */
+document.getElementById("acc-grid").innerHTML = targets.map(col=>{
+  const rows = teams.map(t=>({name:t.name, mae:t.mae[col], rank:t.mae_rank[col]}))
+                    .sort((a,b)=>a.mae-b.mae);
+  const maxMae = Math.max(...rows.map(r=>r.mae),1e-9);
+  const body = rows.map(r=>`
+    <div class="acc-row ${r.rank===1?'best':''}">
+      <div class="acc-rank">${r.rank}</div>
+      <div class="acc-name" title="${r.name}">${r.name}</div>
+      <div class="acc-bar"><span data-w="${(100*r.mae/maxMae).toFixed(1)}"></span></div>
+      <div class="acc-val">${r.mae.toFixed(2)}</div>
+    </div>`).join("");
+  return `<div class="acc-card"><h3>${SHORT[col]||col}</h3>
+    <div class="unit">MAE · ${UNIT[col]||""}</div>${body}</div>`;
+}).join("");
+requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  document.querySelectorAll(".acc-bar>span").forEach(s=>s.style.width=s.dataset.w+"%");
+}));
+
+/* footer */
+document.getElementById("foot").innerHTML = `
+  <b>Scoring.</b> Profit follows the project revenue model
+  R(t) = q·DA + C<sub>idle</sub>·Avail↑ + C<sub>prod</sub>·Avail↓ per quarter-hour, summed over
+  ${M.n_days} days after the binary 5% daily unavailability draw (the same draw for every team).
+  <br><br>
+  <b>The water constraint depends on each team's forecasting strategy</b> (project brief, section 6.2),
+  so it is not identical across teams. Day-ahead forecasting uses a daily water budget of
+  (W<sub>today</sub> - ${mwh(P.w_min_end)}) / days remaining, recomputed each day from the team's own
+  reservoir path. Full remaining-month forecasting uses only the global end-of-window floor, free to
+  move water across days.
+  <br><br>
+  <b>Feasibility</b> is checked the same way for everyone: 0 ≤ q ≤ ${P.max_release_qh.toFixed(0)}
+  MWh/qh and total water released ≤ ${mwh(P.total_budget)} MWh (reservoir ≥ ${mwh(P.w_min_end)} MWh
+  at the end of the window). A team that breaks it is marked <b>Constraint Met = no</b>, removed from the
+  profit ranking, and still scored on forecast accuracy.
+`;
+</script>
+</body>
+</html>

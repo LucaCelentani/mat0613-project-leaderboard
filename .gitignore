@@ -1,0 +1,9 @@
+# This repo is PUBLIC. Never commit raw market data or student CSVs.
+*.csv
+data_optimization_project.csv
+
+# Build artifacts — the published page is the committed index.html.
+leaderboard.html
+_site/
+__pycache__/
+*.pyc

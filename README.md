@@ -43,4 +43,4 @@ project brief has the full model.
 ## Visualization
 
 Results for day D+1 are updated during day D after 18:00 (might take more time) and can be visualized in:
- - 'https://github.com/LucaCelentani/mat0613-project-leaderboard'
+ - ['https://github.com/LucaCelentani/mat0613-project-leaderboard'](https://lucacelentani.github.io/mat0613-project-leaderboard/)
